@@ -1,56 +1,69 @@
 package com.opersys.processexplorer;
 
 import android.app.Activity;
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.content.*;
 import android.os.Bundle;
-import android.os.IBinder;
 import android.util.Log;
+import android.view.View;
 import android.webkit.WebView;
-import com.opersys.processexplorer.node.NodeService;
-import com.opersys.processexplorer.node.NodeServiceEvent;
-import com.opersys.processexplorer.node.NodeServiceEventData;
-import com.opersys.processexplorer.node.NodeServiceListener;
+import com.opersys.processexplorer.node.*;
 
 public class ProcessExplorerMain extends Activity implements NodeServiceListener {
-
-    class NodeServiceConnection implements ServiceConnection {
-
-        @Override
-        public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-            Log.i(TAG, "Attached to Node service");
-            nodeService = ((NodeService.NodeServiceBinder) iBinder).getService();
-            nodeService.addNodeServiceListener(ProcessExplorerMain.this);
-            nodeService.start();
-        }
-
-        @Override
-        public void onServiceDisconnected(ComponentName componentName) {
-            Log.i(TAG, "Dettached from Node service");
-            nodeService = null;
-        }
-    }
 
     private static final String TAG = "ProcessExplorer";
 
     private NodeService nodeService;
-
+    private NodeServiceConnection nodeServiceConn;
     private SharedPreferences settings;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Intent serviceIntent, startNodeIntent;
-        NodeServiceConnection nodeServiceConn;
-
         super.onCreate(savedInstanceState);
 
-        //settings = PreferenceManager.getDefaultSharedPreferences(this.getApplicationContext());
+        setContentView(R.layout.main);
+
+        findViewById(R.id.toggleNodeService).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                toggleNodeService();
+            }
+        });
+    }
+
+    protected void startService() {
+        Intent serviceIntent;
 
         // Start the master service.
         serviceIntent = new Intent(this, NodeService.class);
-        nodeServiceConn = new NodeServiceConnection();
+        nodeServiceConn = new NodeServiceConnection(this);
         bindService(serviceIntent, nodeServiceConn, Context.BIND_AUTO_CREATE);
+    }
 
-        setContentView(R.layout.main);
+    protected void stopService() {
+        unbindService(nodeServiceConn);
+
+        nodeServiceConn = null;
+        nodeService = null;
+    }
+
+    protected void toggleNodeService() {
+        if (this.nodeService != null)
+            stopService();
+        else
+            startService();
+    }
+
+    @Override
+    public void onConnected(NodeService nodeService) {
+        this.nodeService = nodeService;
+        nodeService.start();
+    }
+
+    @Override
+    public void onDisconnected() {
+        this.nodeService = null;
     }
 
     @Override
@@ -62,19 +75,5 @@ public class ProcessExplorerMain extends Activity implements NodeServiceListener
             Log.w(TAG, "== STDERR ==");
             Log.w(TAG, evData.getStderr());
         }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        WebView wv = (WebView) findViewById(R.id.webview);
-
-        wv.loadUrl("http://localhost:1337/");
     }
 }

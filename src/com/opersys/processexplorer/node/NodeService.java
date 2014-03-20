@@ -1,13 +1,16 @@
 package com.opersys.processexplorer.node;
 
+import android.app.Notification;
+import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Intent;
 import android.content.res.AssetManager;
-import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.util.Log;
+import com.opersys.processexplorer.ProcessExplorerMain;
+import com.opersys.processexplorer.R;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
 import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
@@ -16,14 +19,11 @@ import org.apache.commons.compress.utils.IOUtils;
 import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
+import java.lang.Thread;
 
-public class NodeService extends Service {
+public class NodeService extends Service implements Thread.UncaughtExceptionHandler {
 
-    public class NodeServiceBinder extends Binder {
-        public NodeService getService() {
-            return NodeService.this;
-        }
-    }
+    private static final int SERVICE_NOTIFICATION_ID = 255;
 
     class NodeProcessHandler extends Handler {
         @Override
@@ -32,27 +32,13 @@ public class NodeService extends Service {
         }
     }
 
-    private static final String TAG = "NodeService";
+    private static final String TAG = "ProcessExplorer-NodeService";
 
     private NodeProcessThread nodeThread;
 
-    private NodeServiceBinder peBinder;
+    private NodeServiceBinder nodeServiceBinder;
 
     private List<NodeServiceListener> nodeServiceListeners;
-
-    private void setMode(String modeStr, String path) throws IOException {
-        ProcessBuilder chmodProcBuilder = new ProcessBuilder();
-        Process chmodProc;
-
-        chmodProcBuilder.command("chmod", modeStr, path);
-        chmodProc = chmodProcBuilder.start();
-
-        try {
-            chmodProc.waitFor();
-        } catch (InterruptedException e) {
-            // FIXME: Not sure what to do here.
-        }
-    }
 
     private void copyStream(InputStream in, OutputStream out) throws IOException {
         byte[] buffer = new byte[1024];
@@ -60,29 +46,6 @@ public class NodeService extends Service {
 
         while((read = in.read(buffer)) != -1)
             out.write(buffer, 0, read);
-    }
-
-    private void copyAsset(String assetPath, String targetPath) {
-        AssetManager assetManager;
-        FileOutputStream os;
-        InputStream is;
-        byte[] buff = new byte[4096];
-
-        try {
-            assetManager = getAssets();
-            is = assetManager.open(assetPath);
-            os = openFileOutput(targetPath, MODE_PRIVATE);
-
-            copyStream(is, os);
-
-            os.close();
-            is.close();
-
-        } catch (FileNotFoundException e) {
-            Log.w(TAG, "Failed to open asset", e);
-        } catch (IOException e) {
-            Log.w(TAG, "Error loading the assets", e);
-        }
     }
 
     protected void fireNodeServiceEvent(NodeServiceEvent ev, NodeServiceEventData evData) {
@@ -99,57 +62,47 @@ public class NodeService extends Service {
     }
 
     public void start() {
-        AssetManager assetManager;
-        InputStream is;
-        GzipCompressorInputStream gzis;
-        TarArchiveInputStream tgzis;
-        TarArchiveEntry tentry;
+        Notification serviceNotif;
+        PendingIntent notifPendingIntent;
+        Intent notifIntent;
 
-        Log.i(TAG, "Node Service started");
-
-        try {
-            assetManager = getAssets();
-            is = assetManager.open("system-explorer.tgz");
-            gzis = new GzipCompressorInputStream(is);
-            tgzis = new TarArchiveInputStream(gzis);
-
-            while ((tentry = tgzis.getNextTarEntry()) != null) {
-                final File outputFile = new File(getFilesDir(), tentry.getName());
-                if (tentry.isDirectory()) {
-                    if (!outputFile.exists()) {
-                        if (!outputFile.mkdirs()) {
-                            throw new IllegalStateException(String.format("Couldn't create directory %s.", outputFile.getAbsolutePath()));
-                        }
-                    }
-                } else {
-                    final OutputStream outputFileStream = new FileOutputStream(outputFile);
-                    IOUtils.copy(tgzis, outputFileStream);
-                    outputFileStream.close();
-                }
-            }
-        } catch (IOException ex) {
-
+        if (nodeThread != null) {
+            Log.i(TAG, "Node service already started.");
+            return;
         }
 
-        try {
-            setMode("0777", getFilesDir() + "/node");
-        } catch (IOException e) {
-            Log.e(TAG, "Failed to made node binary executable", e);
-        }
+        Log.i(TAG, "Node service starting");
 
-        nodeThread = new NodeProcessThread(
-                getFilesDir().toString() + "/node",
-                getFilesDir().toString() + "/HelloWorld.js",
-                getFilesDir().toString(),
+        nodeThread = new NodeProcessThread(getAssets(), getFilesDir().toString(), "node", "app.js",
                 new NodeProcessHandler(),
                 this);
-
+        nodeThread.setUncaughtExceptionHandler(this);
         nodeThread.start();
+
+        notifIntent = new Intent(this, ProcessExplorerMain.class);
+        notifPendingIntent = PendingIntent.getActivity(this, 0, notifIntent, 0);
+
+        serviceNotif = new Notification.Builder(this)
+                .setContentTitle("Starting...")
+                .setContentText("Process Explorer")
+                .setContentIntent(notifPendingIntent)
+                .setSmallIcon(R.drawable.icon)
+                .build();
+
+        startForeground(SERVICE_NOTIFICATION_ID, serviceNotif);
+    }
+
+    @Override
+    public void uncaughtException(Thread thread, Throwable ex) {
+        nodeThread = null;
+        Log.e(TAG, "Uncaught exception in thread, stopping the service.", ex);
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+
+        Log.i(TAG, "Node service is being destroyed");
 
         if (nodeThread != null) {
             nodeThread.endProcess();
@@ -159,13 +112,13 @@ public class NodeService extends Service {
 
     @Override
     public IBinder onBind(Intent intent) {
-        return peBinder;
+        return nodeServiceBinder;
     }
 
     public NodeService() {
         super();
 
-        peBinder = new NodeServiceBinder();
+        nodeServiceBinder= new NodeServiceBinder(this);
         nodeServiceListeners = new LinkedList<NodeServiceListener>();
     }
 }
