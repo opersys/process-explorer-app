@@ -132,9 +132,8 @@ public class NodeService extends Service implements Thread.UncaughtExceptionHand
             sendBroadcast(bcIntent);
 
             // Only stop the service if there is no thread running.
-            if (nodeThread == null) {
+            if (nodeThread == null)
                 stopSelfResult(startId);
-            }
         }
         else if (intent.getAction().equals(COMMAND_START)) {
             start();

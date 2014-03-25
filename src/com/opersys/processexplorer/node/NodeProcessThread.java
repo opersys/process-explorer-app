@@ -29,8 +29,6 @@ public class NodeProcessThread extends Thread {
     private Process nodeProcess;
     private ProcessBuilder nodeProcessBuilder;
 
-    private SharedPreferences sharedPrefs;
-
     public void startProcess() {
         this.start();
     }
@@ -40,7 +38,7 @@ public class NodeProcessThread extends Thread {
             nodeProcess.destroy();
 
         nodeProcessBuilder = null;
-        nodeProcess = null;
+        //nodeProcess = null;
     }
 
     private void setMode(String modeStr, String path) throws IOException {
