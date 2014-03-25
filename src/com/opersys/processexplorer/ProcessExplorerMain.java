@@ -11,6 +11,9 @@ import android.preference.PreferenceManager;
 import android.util.Log;
 import com.opersys.processexplorer.node.*;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+
 public class ProcessExplorerMain extends PreferenceActivity
         implements SharedPreferences.OnSharedPreferenceChangeListener {
 
@@ -95,11 +98,26 @@ public class ProcessExplorerMain extends PreferenceActivity
     }
 
     public void onBroadcastReceived(Intent intent) {
-        CheckBoxPreference isRunningPref = (CheckBoxPreference) findPreference("isRunning");
+        final CheckBoxPreference isRunningPref;
+
+        isRunningPref = (CheckBoxPreference) findPreference("isRunning");
 
         if (intent.getAction().equals(NodeService.EVENT_STATUS)) {
             Log.d(TAG, "Service running == " + intent.getExtras().get("status"));
             isRunningPref.setChecked((Boolean) intent.getExtras().get("status"));
         }
+
+        if (intent.getAction().equals(NodeService.EVENT_STARTED)) {
+
+            new LocalIPAddressTask() {
+                @Override
+                public void onPostExecute(InetAddress inetAddress) {
+                    isRunningPref.setSummary("Listening on " + inetAddress.getHostAddress() + ":3000/index.html");
+                }
+            }.execute();
+        }
+
+        if (intent.getAction().equals(NodeService.EVENT_STOPPED))
+            isRunningPref.setSummary("");
     }
 }
