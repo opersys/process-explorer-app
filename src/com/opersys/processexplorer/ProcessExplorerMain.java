@@ -1,79 +1,105 @@
 package com.opersys.processexplorer;
 
-import android.app.Activity;
-import android.app.Notification;
-import android.app.PendingIntent;
-import android.content.*;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.CheckBoxPreference;
+import android.preference.Preference;
+import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.View;
-import android.webkit.WebView;
 import com.opersys.processexplorer.node.*;
 
-public class ProcessExplorerMain extends Activity implements NodeServiceListener {
+public class ProcessExplorerMain extends PreferenceActivity
+        implements SharedPreferences.OnSharedPreferenceChangeListener {
 
-    private static final String TAG = "ProcessExplorer";
+    public static final String TAG = "ProcessExplorer";
 
-    private NodeService nodeService;
-    private NodeServiceConnection nodeServiceConn;
-    private SharedPreferences settings;
+    private ProcessExplorerReceiver bcReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        final SharedPreferences sharedPrefs;
+        IntentFilter bcFilter;
+        Intent bcIntent;
+        Preference prefStart;
+
         super.onCreate(savedInstanceState);
 
-        setContentView(R.layout.main);
+        bcFilter = new IntentFilter();
+        bcReceiver = new ProcessExplorerReceiver(this);
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        findViewById(R.id.toggleNodeService).setOnClickListener(new View.OnClickListener() {
+        bcFilter.addAction(NodeService.EVENT_STARTED);
+        bcFilter.addAction(NodeService.EVENT_STARTING);
+        bcFilter.addAction(NodeService.EVENT_STOPPED);
+        bcFilter.addAction(NodeService.EVENT_ERROR);
+        bcFilter.addAction(NodeService.EVENT_STATUS);
+
+        addPreferencesFromResource(R.xml.preferences);
+        registerReceiver(bcReceiver, bcFilter);
+        prefStart = (Preference) findPreference("isRunning");
+        prefStart.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public void onClick(View v) {
-                toggleNodeService();
+            public boolean onPreferenceClick(Preference preference) {
+                if (sharedPrefs.getBoolean(preference.getKey(), false))
+                    startService();
+                else
+                    stopService();
+
+                return false;
             }
         });
+
+        bcIntent = new Intent(this, NodeService.class);
+        bcIntent.setAction(NodeService.COMMAND_STATUS);
+        startService(bcIntent);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPrefs, String key) {
+        Log.d(TAG, "Preference: " + key + " changing.");
+
+        if (key.equals("isRunning")) {
+            if (!sharedPrefs.contains("isRunning"))
+                return;
+
+            if (sharedPrefs.getBoolean("isRunning", false))
+                startService();
+            else
+                stopService();
+        }
     }
 
     protected void startService() {
         Intent serviceIntent;
 
-        // Start the master service.
         serviceIntent = new Intent(this, NodeService.class);
-        nodeServiceConn = new NodeServiceConnection(this);
-        bindService(serviceIntent, nodeServiceConn, Context.BIND_AUTO_CREATE);
+        serviceIntent.setAction(NodeService.COMMAND_START);
+        startService(serviceIntent);
     }
 
     protected void stopService() {
-        unbindService(nodeServiceConn);
+        Intent serviceIntent;
 
-        nodeServiceConn = null;
-        nodeService = null;
-    }
-
-    protected void toggleNodeService() {
-        if (this.nodeService != null)
-            stopService();
-        else
-            startService();
+        serviceIntent = new Intent(this, NodeService.class);
+        stopService(serviceIntent);
     }
 
     @Override
-    public void onConnected(NodeService nodeService) {
-        this.nodeService = nodeService;
-        nodeService.start();
+    protected void onDestroy() {
+        super.onStop();
+
+        unregisterReceiver(bcReceiver);
     }
 
-    @Override
-    public void onDisconnected() {
-        this.nodeService = null;
-    }
+    public void onBroadcastReceived(Intent intent) {
+        CheckBoxPreference isRunningPref = (CheckBoxPreference) findPreference("isRunning");
 
-    @Override
-    public void NodeServiceEvent(NodeServiceEvent ev, NodeServiceEventData evData) {
-        if (ev == NodeServiceEvent.NODE_QUIT) {
-            Log.w(TAG, "Node process failed, output follows");
-            Log.w(TAG, "== STDOUT ==");
-            Log.w(TAG, evData.getStdout());
-            Log.w(TAG, "== STDERR ==");
-            Log.w(TAG, evData.getStderr());
+        if (intent.getAction().equals(NodeService.EVENT_STATUS)) {
+            Log.d(TAG, "Service running == " + intent.getExtras().get("status"));
+            isRunningPref.setChecked((Boolean) intent.getExtras().get("status"));
         }
     }
 }

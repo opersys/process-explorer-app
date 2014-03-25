@@ -1,7 +1,9 @@
 package com.opersys.processexplorer.node;
 
+import android.content.SharedPreferences;
 import android.content.res.AssetManager;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
@@ -26,6 +28,8 @@ public class NodeProcessThread extends Thread {
     private NodeService service;
     private Process nodeProcess;
     private ProcessBuilder nodeProcessBuilder;
+
+    private SharedPreferences sharedPrefs;
 
     public void startProcess() {
         this.start();
@@ -58,6 +62,13 @@ public class NodeProcessThread extends Thread {
         GzipCompressorInputStream gzis;
         TarArchiveInputStream tgzis;
         TarArchiveEntry tentry;
+
+        //msgHandler.post(new Runnable() {
+        //    @Override
+        //public void run() {
+        //        service.broadcastNodeServiceEvent(NodeServiceEvent.NODE_EXTRACTING);
+        //    }
+        //});
 
         try {
             is = assetManager.open("system-explorer.tgz");
@@ -100,7 +111,6 @@ public class NodeProcessThread extends Thread {
         } catch (IOException e) {
             Log.e(TAG, "Failed to made node binary executable", e);
         }
-
     }
 
     @Override
@@ -111,6 +121,13 @@ public class NodeProcessThread extends Thread {
 
         Log.d(TAG, "Node process thread starting");
 
+        msgHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                service.broadcastNodeServiceEvent(NodeService.EVENT_STARTING);
+            }
+        });
+
         nodeProcessBuilder = new ProcessBuilder()
                 .directory(new File(dir))
                 .command(exec, js);
@@ -120,26 +137,35 @@ public class NodeProcessThread extends Thread {
         try {
             Log.d(TAG, "Node process thread started");
 
+            msgHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    service.broadcastNodeServiceEvent(NodeService.EVENT_STARTED);
+                }
+            });
+
             nodeProcess = nodeProcessBuilder.start();
             nodeProcess.waitFor();
 
             Log.d(TAG, "Node process thread stopping");
 
-            // Read the outputs
-            bin = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
-            berr = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
             sin = new StringBuffer();
             serr = new StringBuffer();
 
-            while ((s = bin.readLine()) != null) sin.append(s);
-            while ((s = berr.readLine()) != null) serr.append(s);
+            // Read the outputs
+            if (nodeProcess.getInputStream() != null) {
+                bin = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
+                while ((s = bin.readLine()) != null) sin.append(s);
+            }
+            if (nodeProcess.getErrorStream() != null) {
+                berr = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
+                while ((s = berr.readLine()) != null) serr.append(s);
+            }
 
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(
-                            NodeServiceEvent.NODE_QUIT,
-                            new NodeServiceEventData(sin.toString(), serr.toString()));
+                    service.broadcastNodeServiceEvent(NodeService.EVENT_STOPPED);
                 }
             });
 
@@ -149,9 +175,7 @@ public class NodeProcessThread extends Thread {
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(
-                            NodeServiceEvent.NODE_ERROR,
-                            new NodeServiceEventData());
+                    service.broadcastNodeServiceEvent(NodeService.EVENT_ERROR);
                 }
             });
 
@@ -161,11 +185,11 @@ public class NodeProcessThread extends Thread {
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(
-                            NodeServiceEvent.NODE_ERROR,
-                            new NodeServiceEventData());
+                    service.broadcastNodeServiceEvent(NodeService.EVENT_ERROR);
                 }
             });
+        } finally {
+            endProcess();
         }
     }
 
