@@ -1,4 +1,4 @@
-package com.opersys.processexplorer;
+package com.opersys.processexplorer.tasks;
 
 import android.os.AsyncTask;
 

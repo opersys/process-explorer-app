@@ -12,12 +12,7 @@
 
     <CheckBoxPreference
         android:key="isRunning"
-        android:title="Service Active"
-        android:summary="Controls the current state of the service" />
-
-    <CheckBoxPreference
-        android:key="isAutoStart"
-        android:title="Start automatically"
-        android:summary="Start automatically when the device starts" />
+        android:title="Start the service with the device"
+        android:summary="" />
 
 </PreferenceScreen>
