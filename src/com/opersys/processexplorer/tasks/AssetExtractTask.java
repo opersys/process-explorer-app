@@ -18,6 +18,35 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
 
     private static final String TAG = "AssetExtractTask";
 
+    public static boolean isExtractRequired(AssetExtractTaskParams params) {
+        AssetManager assetManager;
+        String assetMd5sumPath, assetMd5sum, exMd5sum;
+        File exMd5sumFile;
+        BufferedReader assetMd5in, exMd5in;
+
+        assetManager = params.assetManager;
+        assetMd5sumPath = params.assetMd5sumPath;
+        exMd5sumFile = new File(params.extractPath + File.separator + "md5sum");
+
+        try {
+            assetMd5in = new BufferedReader(new InputStreamReader(assetManager.open(assetMd5sumPath)));
+            exMd5in = new BufferedReader(new FileReader(exMd5sumFile));
+
+            assetMd5sum = assetMd5in.readLine();
+            exMd5sum = exMd5in.readLine();
+
+            assetMd5in.close();
+            exMd5in.close();
+
+        } catch (IOException e) {
+            Log.w(TAG, "Error trying to determine if data extraction is required", e);
+
+            return true;
+        }
+
+        return !(assetMd5sum.trim().equals(exMd5sum.trim()));
+    }
+
     protected void chmod(String mode, String target) {
         Process chmodProcess;
         String[] chmodArr = { "/system/bin/chmod", mode, target };
@@ -103,8 +132,24 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
             zipFile.delete();
         }
 
+        // FIXME: This is a hack. I need to make up something else eventually.
         chmod("0755", extractPath + File.separator + "node");
 
+        // Copy the md5sum of the asset file to the disk.
+        try {
+            is = assetManager.open(params[0].assetMd5sumPath);
+            os = new FileOutputStream(new File(extractPath + File.separator + "md5sum"));
+
+            IOUtils.copy(is, os);
+
+            is.close();
+            os.close();
+
+        } catch (IOException e) {
+            Log.e(TAG, "Exception with extracting the asset md5sum file", e);
+        }
+
+        // No need to return anything since this is a task executed for side effects.
         return null;
     }
 }

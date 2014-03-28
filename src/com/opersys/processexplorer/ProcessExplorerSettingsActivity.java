@@ -88,29 +88,34 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         prepareLayout();
         startServices();
 
-        progDialog = new ProgressDialog(this);
-        progDialog.setMax(100);
-        progDialog.setMessage("Extracting assets...");
-        progDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-
         extractTaskParams = new AssetExtractTaskParams();
         extractTaskParams.assetPath = "system-explorer.zip";
+        extractTaskParams.assetMd5sumPath = "system-explorer.zip.md5sum";
         extractTaskParams.extractPath = getFilesDir();
         extractTaskParams.assetManager = getAssets();
 
-        extractTask = new AssetExtractTask() {
-            @Override
-            protected void onProgressUpdate(Integer... values) {
-                progDialog.setProgress(values[0]);
-            }
+        if (AssetExtractTask.isExtractRequired(extractTaskParams)) {
 
-            @Override
-            protected void onPostExecute(Void aVoid) {
-                progDialog.hide();
-            }
-        };
-        progDialog.show();
-        extractTask.execute(extractTaskParams);
+            progDialog = new ProgressDialog(this);
+            progDialog.setMax(100);
+            progDialog.setMessage("Extracting assets...");
+            progDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+
+            extractTask = new AssetExtractTask() {
+                @Override
+                protected void onProgressUpdate(Integer... values) {
+                    progDialog.setProgress(values[0]);
+                }
+
+                @Override
+                protected void onPostExecute(Void aVoid) {
+                    progDialog.hide();
+                }
+            };
+            progDialog.show();
+            extractTask.execute(extractTaskParams);
+        }
+        else Log.i(TAG, "Not extracting assets.");
     }
 
     @Override
