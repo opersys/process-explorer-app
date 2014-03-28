@@ -12,6 +12,8 @@ public class AssetExtractTaskParams {
 
     public String assetPath;
 
+    public String assetMd5sumPath;
+
     public File extractPath;
 
     public AssetManager assetManager;
