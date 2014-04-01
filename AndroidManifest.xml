@@ -13,7 +13,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".node.NodeService" />
+        <service android:name=".ProcessExplorerService" />
 
     </application>
 

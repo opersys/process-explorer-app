@@ -1,71 +1,83 @@
 package com.opersys.processexplorer.node;
 
-import android.content.res.AssetManager;
 import android.os.Handler;
 import android.util.Log;
-import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.compress.archivers.tar.TarArchiveInputStream;
-import org.apache.commons.compress.compressors.gzip.GzipCompressorInputStream;
-import org.apache.commons.compress.utils.IOUtils;
+import com.opersys.processexplorer.ProcessExplorerService;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
 /**
  * Simple process listener thread.
  */
 public class NodeProcessThread extends Thread {
 
-    private static final String TAG = "ProcessExplorer-NodeProcessThread";
+    private static final String TAG = "NodeProcessThread";
 
-    private AssetManager assetManager;
     private String dir;
     private String exec;
     private String js;
 
     private Handler msgHandler;
-    private NodeService service;
+    private ProcessExplorerService service;
     private Process nodeProcess;
     private ProcessBuilder nodeProcessBuilder;
 
-    public void startProcess() {
-        this.start();
+    private boolean isStopping;
+
+    public void stopProcess() {
+        // This asks the process to stop itself.
+        isStopping = true;
+        this.interrupt();
     }
 
-    public void endProcess() {
-        if (nodeProcess != null)
-            nodeProcess.destroy();
-
-        nodeProcessBuilder = null;
-        //nodeProcess = null;
+    public void startProcess() {
+        start();
     }
 
     @Override
     public void run() {
-        BufferedReader bin, berr;
         final StringBuffer sin, serr;
+        final NodeThreadEventData emptyEventData;
+        BufferedReader bin, berr;
         String s;
+
+        emptyEventData = new NodeThreadEventData();
 
         try {
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(NodeServiceEvent.NODE_STARTING, new NodeServiceEventData());
+                    service.fireNodeServiceEvent(NodeThreadEvent.NODE_STARTING, emptyEventData);
                 }
             });
 
             nodeProcessBuilder = new ProcessBuilder()
                     .directory(new File(dir))
                     .command(exec, js);
-            nodeProcess = nodeProcessBuilder.start();
 
-            msgHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    service.fireNodeServiceEvent(NodeServiceEvent.NODE_STARTED, new NodeServiceEventData());
+            if (!isStopping) {
+                nodeProcess = nodeProcessBuilder.start();
+
+                msgHandler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        service.fireNodeServiceEvent(NodeThreadEvent.NODE_STARTED, emptyEventData);
+                    }
+                });
+            }
+
+            while (!isStopping) {
+                try {
+                    nodeProcess.waitFor();
+                } catch (InterruptedException e) {
+                    Log.i(TAG, "Interrupting wait on Node process");
                 }
-            });
+            }
 
-            nodeProcess.waitFor();
+            nodeProcess.destroy();
 
             sin = new StringBuffer();
             serr = new StringBuffer();
@@ -73,17 +85,20 @@ public class NodeProcessThread extends Thread {
             // Read the outputs
             if (nodeProcess.getInputStream() != null) {
                 bin = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
-                while ((s = bin.readLine()) != null) sin.append(s);
+                while ((s = bin.readLine()) != null)
+                    sin.append(s);
             }
             if (nodeProcess.getErrorStream() != null) {
                 berr = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
-                while ((s = berr.readLine()) != null) serr.append(s);
+                while ((s = berr.readLine()) != null)
+                    serr.append(s);
             }
 
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(NodeServiceEvent.NODE_STOPPED, new NodeServiceEventData());
+                    service.fireNodeServiceEvent(NodeThreadEvent.NODE_STOPPED,
+                            new NodeThreadEventData(sin.toString(), serr.toString()));
                 }
             });
 
@@ -91,34 +106,26 @@ public class NodeProcessThread extends Thread {
             msgHandler.post(new Runnable() {
                 @Override
                 public void run() {
-                    service.fireNodeServiceEvent(NodeServiceEvent.NODE_ERROR, new NodeServiceEventData());
-                }
-            });
-
-        } catch (InterruptedException e) {
-            msgHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    service.fireNodeServiceEvent(NodeServiceEvent.NODE_ERROR, new NodeServiceEventData());
+                    service.fireNodeServiceEvent(NodeThreadEvent.NODE_ERROR, emptyEventData);
                 }
             });
 
         } finally {
-            endProcess();
+            nodeProcess.destroy();
+            nodeProcess = null;
         }
     }
 
-    public NodeProcessThread(AssetManager assetManager,
-                             String dir,
+    public NodeProcessThread(String dir,
                              String execfile,
                              String jsfile,
                              Handler msgHandler,
-                             NodeService service) {
-        this.assetManager = assetManager;
+                             ProcessExplorerService service) {
         this.dir = dir;
         this.msgHandler = msgHandler;
         this.service = service;
         this.exec = dir + "/"+ execfile;
         this.js = dir + "/" + jsfile;
     }
+
 }

@@ -3,33 +3,24 @@ package com.opersys.processexplorer;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.preference.CheckBoxPreference;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.widget.Button;
-import android.widget.PopupWindow;
 import com.opersys.processexplorer.node.*;
-import com.opersys.processexplorer.platforminfo.PlatformInfoService;
 import com.opersys.processexplorer.tasks.AssetExtractTask;
 import com.opersys.processexplorer.tasks.AssetExtractTaskParams;
 
-import java.net.InetAddress;
-
 public class ProcessExplorerSettingsActivity extends PreferenceActivity
-        implements SharedPreferences.OnSharedPreferenceChangeListener, NodeServiceListener {
+        implements SharedPreferences.OnSharedPreferenceChangeListener, NodeThreadListener {
 
     public static final String TAG = "ProcessExplorer";
 
-    protected NodeServiceBinder nodeService;
-    protected NodeServiceConnection nodeServiceConnection;
+    protected ProcessExplorerServiceBinder serviceBinder;
+    protected ProcessExplorerServiceConnection servConn;
 
     protected void prepareLayout() {
         final SharedPreferences sharedPrefs;
@@ -39,42 +30,39 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         layoutInflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
-        getListView().addFooterView(layoutInflater.inflate(R.layout.main_footer, null));
+        addPreferencesFromResource(R.xml.preferences);
 
-        findViewById(R.id.btnStartNow).setOnClickListener(new View.OnClickListener() {
+        findPreference("startNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
-            public void onClick(View v) {
-                nodeService.startNodeProcess();
+            public boolean onPreferenceClick(Preference preference) {
+                serviceBinder.startServiceThreads();
+                return true;
             }
         });
 
-        addPreferencesFromResource(R.xml.preferences);
-        prefStart = findPreference("isRunning");
-/*        prefStart.setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+        findPreference("stopNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
-                if (sharedPrefs.getBoolean(preference.getKey(), false))
-                    startService();
-                else
-                    stopService();
-
-                return false;
+                serviceBinder.stopServiceThreads();
+                return true;
             }
-        });*/
+        });
     }
 
-    protected void startServices() {
-        Intent nodeServIntent, nodePlatIntent;
+    protected void startService() throws Exception {
+        Intent servIntent;
 
-        nodeServIntent = new Intent(this, NodeService.class);
-        nodeServiceConnection = new NodeServiceConnection(this);
+        servIntent = new Intent(this, ProcessExplorerService.class);
+        servConn = new ProcessExplorerServiceConnection(this);
 
-        startService(nodeServIntent);
-        bindService(nodeServIntent, nodeServiceConnection, BIND_AUTO_CREATE);
-
-        nodePlatIntent = new Intent(this, PlatformInfoService.class);
-        startService(nodePlatIntent);
-        //bindService(nodePlatIntent, new PlatformInfoServiceConnection(this), BIND_AUTO_CREATE);
+        /*
+         * FIXME: I'm absolutely not sure we can call bindService immediately after bindService but
+         * I haven't found anything in the documentation that says otherwise.
+         */
+        if (startService(servIntent) != null)
+            bindService(servIntent, servConn, BIND_AUTO_CREATE);
+        else
+            throw new Exception("Failed to start service");
     }
 
     @Override
@@ -86,7 +74,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         super.onCreate(savedInstanceState);
 
         prepareLayout();
-        startServices();
 
         extractTaskParams = new AssetExtractTaskParams();
         extractTaskParams.assetPath = "system-explorer.zip";
@@ -115,7 +102,8 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
             progDialog.show();
             extractTask.execute(extractTaskParams);
         }
-        else Log.i(TAG, "Not extracting assets.");
+        else
+            Log.i(TAG, "Not extracting assets.");
     }
 
     @Override
@@ -134,30 +122,43 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
     }
 
     @Override
-    protected void onDestroy() {
-        super.onStop();
+    protected void onResume() {
+        super.onResume();
 
-        nodeService.removeNodeServiceListener(this);
-        unbindService(nodeServiceConnection);
+        try {
+            startService();
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to start service", e);
+        }
     }
 
     @Override
-    public void onNodeServiceConnected(NodeServiceBinder service) {
+    protected void onPause() {
+        super.onPause();
+
+        if (serviceBinder != null) {
+            serviceBinder.removeNodeThreadListener(this);
+            unbindService(servConn);
+        }
+    }
+
+    @Override
+    public void onProcessServiceConnected(ProcessExplorerServiceBinder service) {
         Log.d(TAG, "Connected to Node service");
 
-        nodeService = service;
-        nodeService.addNodeServiceListener(this);
+        serviceBinder = service;
+        serviceBinder.addNodeThreadListener(this);
     }
 
     @Override
-    public void onNodeServiceDisconnected() {
+    public void onProcessServiceDisconnected() {
         Log.d(TAG, "Disconnected from Node service");
 
-        nodeService = null;
+        serviceBinder = null;
     }
 
     @Override
-    public void NodeServiceEvent(NodeServiceEvent ev, NodeServiceEventData evData) {
+    public void ProcessExplorerServiceEvent(NodeThreadEvent ev, NodeThreadEventData evData) {
         switch (ev) {
             case NODE_STARTED:
                 Log.d(TAG, "Received NODE_STARTED");
@@ -173,10 +174,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
 
             case NODE_STARTING:
                 Log.d(TAG, "Received NODE_STARTING");
-                break;
-
-            case NODE_EXTRACTING:
-                Log.d(TAG, "Received NODE_EXTRACTING");
                 break;
 
             case NODE_STOPPING:

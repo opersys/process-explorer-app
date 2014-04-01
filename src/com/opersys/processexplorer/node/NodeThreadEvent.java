@@ -1,6 +1,6 @@
 package com.opersys.processexplorer.node;
 
-public enum NodeServiceEvent {
+public enum NodeThreadEvent {
 
     NODE_QUIT,
 
@@ -9,8 +9,6 @@ public enum NodeServiceEvent {
     NODE_STARTING,
 
     NODE_STARTED,
-
-    NODE_EXTRACTING,
 
     NODE_STOPPING,
 
