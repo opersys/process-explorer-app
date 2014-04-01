@@ -15,4 +15,12 @@
         android:title="Start the service with the device"
         android:summary="" />
 
+    <Preference
+        android:key="startNow"
+        android:title="Start the service immediately" />
+
+    <Preference
+        android:key="stopNow"
+        android:title="Stop the service immediately" />
+
 </PreferenceScreen>

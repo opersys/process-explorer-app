@@ -1,6 +1,6 @@
 package com.opersys.processexplorer.node;
 
-public class NodeServiceEventData {
+public class NodeThreadEventData {
 
     private String stdout;
 
@@ -14,10 +14,10 @@ public class NodeServiceEventData {
         return this.stderr;
     }
 
-    public NodeServiceEventData(String stdout, String stderr) {
+    public NodeThreadEventData(String stdout, String stderr) {
         this.stdout = stdout;
         this.stderr = stderr;
     }
 
-    public NodeServiceEventData() {}
+    public NodeThreadEventData() {}
 }
