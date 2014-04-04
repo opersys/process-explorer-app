@@ -3,24 +3,24 @@
                   android:layout_width="match_parent"
                   android:layout_height="match_parent">
 
-    <EditTextPreference
-            android:key="counter"
+    <com.opersys.processexplorer.misc.IPPortEditTextPreference
+            android:key="nodePort"
             android:title="Port"
-            android:summary=""
-            android:defaultValue="0"
-            />
+            android:defaultValue="3000"
+            android:inputType="numberDecimal"
+            android:dialogMessage="Enter a valid TCP port (1024-65536)"/>
 
     <CheckBoxPreference
         android:key="isRunning"
-        android:title="Start the service with the device"
-        android:summary="" />
+        android:title="Start on power-on"
+        android:summary="Make the service start on the device bootup" />
 
     <Preference
         android:key="startNow"
-        android:title="Start the service immediately" />
+        android:title="Start the service" />
 
     <Preference
         android:key="stopNow"
-        android:title="Stop the service immediately" />
+        android:title="Stop the service" />
 
 </PreferenceScreen>

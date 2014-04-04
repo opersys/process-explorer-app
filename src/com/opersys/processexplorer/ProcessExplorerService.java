@@ -2,9 +2,11 @@ package com.opersys.processexplorer;
 
 import android.app.Service;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import com.opersys.processexplorer.node.*;
 import com.opersys.processexplorer.platforminfo.PlatformInfoServer;
@@ -93,6 +95,8 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
     }
 
     protected void startNodeProcess() {
+        SharedPreferences sharedPrefs;
+
         if (nodeThread != null) {
             Log.w(TAG, "Node process already started");
             return;
@@ -100,9 +104,12 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
         Log.i(TAG, "Asked to start Node process");
 
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         nodeThread = new NodeProcessThread(getFilesDir().toString(), "node", "app.js",
                 new NodeProcessHandler(),
                 this);
+        nodeThread.setEnvironment("PORT", sharedPrefs.getString("nodePort", "3000"));
         nodeThread.setUncaughtExceptionHandler(this);
         nodeThread.startProcess();
     }
