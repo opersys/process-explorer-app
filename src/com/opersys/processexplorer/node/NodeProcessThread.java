@@ -8,6 +8,8 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Simple process listener thread.
@@ -15,6 +17,7 @@ import java.io.InputStreamReader;
 public class NodeProcessThread extends Thread {
 
     private static final String TAG = "NodeProcessThread";
+    private ProcessBuilder nodeProcessBuilder;
 
     private String dir;
     private String exec;
@@ -23,7 +26,6 @@ public class NodeProcessThread extends Thread {
     private Handler msgHandler;
     private ProcessExplorerService service;
     private Process nodeProcess;
-    private ProcessBuilder nodeProcessBuilder;
 
     private boolean isStopping;
 
@@ -35,6 +37,12 @@ public class NodeProcessThread extends Thread {
 
     public void startProcess() {
         start();
+    }
+
+    public void setEnvironment(String varName, String varValue) {
+        nodeProcessBuilder
+                .environment()
+                .put(varName, varValue);
     }
 
     @Override
@@ -54,7 +62,7 @@ public class NodeProcessThread extends Thread {
                 }
             });
 
-            nodeProcessBuilder = new ProcessBuilder()
+            nodeProcessBuilder
                     .directory(new File(dir))
                     .command(exec, js);
 
@@ -126,6 +134,8 @@ public class NodeProcessThread extends Thread {
         this.service = service;
         this.exec = dir + "/"+ execfile;
         this.js = dir + "/" + jsfile;
+
+        this.nodeProcessBuilder = new ProcessBuilder();
     }
 
 }

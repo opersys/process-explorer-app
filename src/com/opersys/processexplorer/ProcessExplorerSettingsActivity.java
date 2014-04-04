@@ -1,21 +1,19 @@
 package com.opersys.processexplorer;
 
 import android.app.ProgressDialog;
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
-import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.LayoutInflater;
-import com.opersys.processexplorer.node.*;
+import com.opersys.processexplorer.node.NodeThreadEvent;
+import com.opersys.processexplorer.node.NodeThreadEventData;
+import com.opersys.processexplorer.node.NodeThreadListener;
 import com.opersys.processexplorer.tasks.AssetExtractTask;
 import com.opersys.processexplorer.tasks.AssetExtractTaskParams;
 
 public class ProcessExplorerSettingsActivity extends PreferenceActivity
-        implements SharedPreferences.OnSharedPreferenceChangeListener, NodeThreadListener {
+        implements NodeThreadListener {
 
     public static final String TAG = "ProcessExplorer";
 
@@ -23,13 +21,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
     protected ProcessExplorerServiceConnection servConn;
 
     protected void prepareLayout() {
-        final SharedPreferences sharedPrefs;
-        Preference prefStart;
-        LayoutInflater layoutInflater;
-
-        layoutInflater = (LayoutInflater) this.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-
         addPreferencesFromResource(R.xml.preferences);
 
         findPreference("startNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
@@ -104,21 +95,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         }
         else
             Log.i(TAG, "Not extracting assets.");
-    }
-
-    @Override
-    public void onSharedPreferenceChanged(SharedPreferences sharedPrefs, String key) {
-        Log.d(TAG, "Preference: " + key + " changing.");
-
-        /*if (key.equals("isRunning")) {
-            if (!sharedPrefs.contains("isRunning"))
-                return;
-
-            if (sharedPrefs.getBoolean("isRunning", false))
-                startService();
-            else
-                stopService();
-        } */
     }
 
     @Override
