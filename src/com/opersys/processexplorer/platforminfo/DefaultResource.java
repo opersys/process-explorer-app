@@ -4,13 +4,13 @@ import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
 /**
- * Date: 31/03/14
- * Time: 12:16 PM
+ * Date: 04/04/14
+ * Time: 11:57 AM
  */
-public class PlatformInfoServiceResource extends ServerResource {
+public class DefaultResource extends ServerResource {
 
     @Get
     public String toString() {
-        return "hello, world";
+        return "Platform Information Restlet";
     }
 }

@@ -8,12 +8,14 @@ import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import com.opersys.processexplorer.node.*;
+import com.opersys.processexplorer.node.NodeProcessThread;
+import com.opersys.processexplorer.node.NodeThreadEvent;
+import com.opersys.processexplorer.node.NodeThreadEventData;
+import com.opersys.processexplorer.node.NodeThreadListener;
 import com.opersys.processexplorer.platforminfo.PlatformInfoServer;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.lang.Thread;
 
 public class ProcessExplorerService extends Service implements Thread.UncaughtExceptionHandler {
 
@@ -131,7 +133,7 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
         Log.i(TAG, "Asked to start platform information restlet");
 
-        platformInfoServer = new PlatformInfoServer();
+        platformInfoServer = new PlatformInfoServer(getPackageManager());
         platformInfoServer.startServer();
     }
 
