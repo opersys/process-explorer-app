@@ -1,34 +1,39 @@
 package com.opersys.processexplorer.platforminfo;
 
+import android.content.pm.PackageManager;
 import android.util.Log;
-import org.restlet.Server;
+import org.restlet.Component;
 import org.restlet.data.Protocol;
 
 public class PlatformInfoServer {
 
     private static String TAG = "PlatformInfoServer";
 
-    protected Server restServer;
+    protected Component mainComp;
 
     public void startServer() {
-        restServer = new Server(Protocol.HTTP, 3001, PlatformInfoServiceResource.class);
-
         try {
-            restServer.start();
-
-            Log.i(TAG, "Platform information restlet was started.");
+            mainComp.start();
+            Log.i(TAG, "Platform information server started");
         } catch (Exception e) {
-            Log.e(TAG, "Failed to start platform information restlet.", e);
+            Log.w(TAG, "Platform information server failed to start", e);
         }
     }
 
     public void stopServer() {
-        if (restServer != null) {
-            try {
-                restServer.stop();
-            } catch (Exception e) {
-                Log.e(TAG, "Failed to stop platform information restlet", e);
-            }
+        try {
+            mainComp.stop();
+            Log.i(TAG, "Platform information server stopped");
+        } catch (Exception e) {
+            Log.w(TAG, "Platform information server failed to stop", e);
         }
+    }
+
+    public PlatformInfoServer(PackageManager pm) {
+        mainComp = new Component();
+
+        // Servers
+        mainComp.getServers().add(Protocol.HTTP, 3001);
+        mainComp.getDefaultHost().attachDefault(new PlatformInfoApp(pm));
     }
 }
