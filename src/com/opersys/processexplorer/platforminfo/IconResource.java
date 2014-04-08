@@ -24,7 +24,7 @@ public class IconResource extends ServerResource {
     private static final String TAG = "IconResource";
     protected PackageManager pm;
 
-    @Get("text/html")
+    @Get
     public Representation doGet() {
         final BitmapDrawable drawable;
         String app;
