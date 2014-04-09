@@ -12,6 +12,7 @@ import org.restlet.representation.StreamRepresentation;
 import org.restlet.resource.Get;
 import org.restlet.resource.ServerResource;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -27,6 +28,7 @@ public class IconResource extends ServerResource {
     @Get
     public Representation doGet() {
         final BitmapDrawable drawable;
+        final ByteArrayOutputStream imgOut;
         String app;
         PackageManager pm;
         StreamRepresentation sr = null;
@@ -42,11 +44,13 @@ public class IconResource extends ServerResource {
 
         try {
             drawable = (BitmapDrawable) pm.getApplicationIcon(app);
+            imgOut = new ByteArrayOutputStream();
+            drawable.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, imgOut);
 
-            sr = new OutputRepresentation(MediaType.IMAGE_PNG) {
+            sr = new OutputRepresentation(MediaType.IMAGE_PNG, imgOut.size()) {
                 @Override
                 public void write(OutputStream outputStream) throws IOException {
-                    drawable.getBitmap().compress(Bitmap.CompressFormat.PNG, 100, outputStream);
+                    outputStream.write(imgOut.toByteArray());
                 }
             };
 

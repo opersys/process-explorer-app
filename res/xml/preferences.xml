@@ -23,4 +23,10 @@
         android:key="stopNow"
         android:title="Stop the service" />
 
+    <Preference
+        android:key="browseNow"
+        android:enabled="false"
+        android:summary="Not started"
+        android:title="Browse the Process Explorer" />
+
 </PreferenceScreen>
