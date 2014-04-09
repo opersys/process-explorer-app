@@ -2,15 +2,23 @@ package com.opersys.processexplorer;
 
 import android.app.ProgressDialog;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import com.opersys.processexplorer.node.NodeThreadEvent;
 import com.opersys.processexplorer.node.NodeThreadEventData;
 import com.opersys.processexplorer.node.NodeThreadListener;
 import com.opersys.processexplorer.tasks.AssetExtractTask;
 import com.opersys.processexplorer.tasks.AssetExtractTaskParams;
+import com.opersys.processexplorer.tasks.LocalIPAddressTask;
+
+import java.net.InetAddress;
+import java.net.MalformedURLException;
+import java.net.URL;
 
 public class ProcessExplorerSettingsActivity extends PreferenceActivity
         implements NodeThreadListener {
@@ -21,12 +29,35 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
     protected ProcessExplorerServiceConnection servConn;
 
     protected void prepareLayout() {
+        final SharedPreferences sharedPrefs;
+
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         addPreferencesFromResource(R.xml.preferences);
 
         findPreference("startNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 serviceBinder.startServiceThreads();
+
+                // Modify...
+                new LocalIPAddressTask() {
+                    @Override
+                    public void onPostExecute(InetAddress inetAddress) {
+                        int port = Integer.parseInt(sharedPrefs.getString("nodePort", "3000"));
+                        URL url;
+
+                        try {
+                            url = new URL("http", inetAddress.getHostAddress(), port, "");
+                            findPreference("browseNow").setSummary("Browse to " + url.toString());
+                            findPreference("browseNow").setEnabled(true);
+
+                        } catch (MalformedURLException e) {
+                            Log.e(TAG, "Cannot form URL", e);
+                        }
+                    }
+                }.execute();
+
                 return true;
             }
         });
@@ -35,6 +66,32 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
             @Override
             public boolean onPreferenceClick(Preference preference) {
                 serviceBinder.stopServiceThreads();
+
+                findPreference("browseNow").setSummary("Not started");
+                findPreference("browseNow").setEnabled(false);
+
+                return true;
+            }
+        });
+
+        findPreference("browseNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                Uri uri;
+                Uri.Builder uriBuilder;
+                int port;
+
+                uriBuilder = new Uri.Builder();
+                port = Integer.parseInt(sharedPrefs.getString("nodePort", "3000"));
+                uri = uriBuilder
+                        .scheme("http")
+                        .encodedAuthority("localhost:" + port)
+                        .path("index.html")
+                        .build();
+
+                Intent browserIntent = new Intent(Intent.ACTION_VIEW, uri);
+                startActivity(browserIntent);
+
                 return true;
             }
         });
@@ -78,6 +135,8 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
             progDialog.setMax(100);
             progDialog.setMessage("Extracting assets...");
             progDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+            progDialog.setCancelable(false);
+            progDialog.setCanceledOnTouchOutside(false);
 
             extractTask = new AssetExtractTask() {
                 @Override
