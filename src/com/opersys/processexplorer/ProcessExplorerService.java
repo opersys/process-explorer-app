@@ -52,6 +52,11 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
                 notifMgr.getForegroundNotificationId(),
                 notifMgr.getForegroundNotification());
 
+        // If this was called by the boot broadcast receiver, start the
+        // node service immediately.
+        if (intent.getExtras().containsKey("booting") && ((Boolean)intent.getExtras().get("booting")))
+            startServices();
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -67,7 +72,7 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
         Log.i(TAG, "Node service is being destroyed");
 
-        stopServiceThreads();
+        stopServices();
     }
 
     @Override
@@ -86,12 +91,12 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
         this.serviceListeners.remove(serviceListener);
     }
 
-    public void startServiceThreads() {
+    public void startServices() {
         startNodeProcess();
         startPlatformInfoServer();
     }
 
-    public void stopServiceThreads() {
+    public void stopServices() {
         stopNodeProcess();
         stopPlatformInfoServer();
     }

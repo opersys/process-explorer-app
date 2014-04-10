@@ -11,7 +11,7 @@
             android:dialogMessage="Enter a valid TCP port (1024-65536)"/>
 
     <CheckBoxPreference
-        android:key="isRunning"
+        android:key="autoStart"
         android:title="Start on power-on"
         android:summary="Make the service start on the device bootup" />
 
