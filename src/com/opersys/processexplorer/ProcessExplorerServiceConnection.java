@@ -15,13 +15,19 @@ public class ProcessExplorerServiceConnection implements ServiceConnection {
         this.serviceListener = serviceListener;
     }
 
+    public ProcessExplorerServiceConnection() {
+        this.serviceListener = null;
+    }
+
     @Override
     public void onServiceConnected(ComponentName componentName, IBinder iBinder) {
-        serviceListener.onProcessServiceConnected((ProcessExplorerServiceBinder) iBinder);
+        if (serviceListener != null)
+            serviceListener.onProcessServiceConnected((ProcessExplorerServiceBinder) iBinder);
     }
 
     @Override
     public void onServiceDisconnected(ComponentName componentName) {
-        serviceListener.onProcessServiceDisconnected();
+        if (serviceListener != null)
+            serviceListener.onProcessServiceDisconnected();
     }
 }

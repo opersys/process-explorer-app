@@ -8,11 +8,11 @@ public class ProcessExplorerServiceBinder extends Binder {
     private ProcessExplorerService target;
 
     public void startServiceThreads() {
-        target.startServiceThreads();
+        target.startServices();
     }
 
     public void stopServiceThreads() {
-        target.stopServiceThreads();
+        target.stopServices();
     }
 
     public boolean isNodeProcessRunning() {
