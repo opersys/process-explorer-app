@@ -189,6 +189,7 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
     protected void updateOnServiceStopped() {
         findPreference("stopNow").setEnabled(false);
         findPreference("startNow").setEnabled(true);
+        findPreference("browseNow").setEnabled(false);
     }
 
     /**
