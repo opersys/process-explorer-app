@@ -66,6 +66,7 @@ public class ProcessExplorerNotificationManager implements NodeThreadListener {
         // Temporary thing.
         notifBuilder.setTicker(contentText);
         notifBuilder.setContentText(contentText);
+        notifBuilder.setContentTitle("Process Explorer");
 
         notif = notifBuilder.build();
         notifService.notify(SERVICE_NOTIFICATION_ID, notif);
