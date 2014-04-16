@@ -58,8 +58,10 @@ public class ProcessExplorerNotificationManager implements NodeThreadListener {
             contentText = "Starting";
         else if (ev == NodeThreadEvent.NODE_STARTED)
             contentText = "Started";
-        else if (ev == NodeThreadEvent.NODE_ERROR || ev == NodeThreadEvent.NODE_STOPPED)
+        else if (ev == NodeThreadEvent.NODE_STOPPED)
             contentText = "Stopped";
+        else if (ev == NodeThreadEvent.NODE_ERROR)
+            contentText = "Error";
         else
             return;
 

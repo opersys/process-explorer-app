@@ -17,7 +17,7 @@ import com.opersys.processexplorer.platforminfo.PlatformInfoServer;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ProcessExplorerService extends Service implements Thread.UncaughtExceptionHandler {
+public class ProcessExplorerService extends Service implements Thread.UncaughtExceptionHandler, NodeThreadListener {
 
     class NodeProcessHandler extends Handler {
         @Override
@@ -118,6 +118,9 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
         nodeThread = new NodeProcessThread(getFilesDir().toString(), "node", "app.js",
                 new NodeProcessHandler(),
                 this);
+
+        addNodeThreadListener(this);
+
         nodeThread.setEnvironment("PORT", sharedPrefs.getString("nodePort", "3000"));
         nodeThread.setUncaughtExceptionHandler(this);
         nodeThread.startProcess();
@@ -155,6 +158,21 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
     public boolean isNodeProcessRunning() {
         return nodeThread != null;
+    }
+
+    @Override
+    public void onProcessServiceConnected(ProcessExplorerServiceBinder service) {}
+
+    @Override
+    public void onProcessServiceDisconnected() {}
+
+    @Override
+    public void ProcessExplorerServiceEvent(NodeThreadEvent ev, NodeThreadEventData evData) {
+        switch (ev) {
+            case NODE_STOPPED:
+            case NODE_ERROR:
+                nodeThread = null;
+        }
     }
 
     public ProcessExplorerService() {
