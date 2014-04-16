@@ -77,9 +77,15 @@ public class NodeProcessThread extends Thread {
                 });
             }
 
+            // Loops through interruption if the interruption was not caused by the
+            // process being asked to stop.
             while (!isStopping) {
                 try {
                     nodeProcess.waitFor();
+
+                    // At this point, the process is stopped, break out of the loop.
+                    break;
+
                 } catch (InterruptedException e) {
                     Log.i(TAG, "Interrupting wait on Node process");
                 }
