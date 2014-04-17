@@ -232,8 +232,18 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
                 break;
 
             case NODE_ERROR:
+                Log.d(TAG, "Received NODE_ERROR");
+                if (evData.getException() != null)
+                    Log.e(TAG, "Exception received", evData.getException());
+                if (evData.getStderr() != null)
+                    Log.e(TAG, "Node standard error: " + evData.getStderr());
+                if (evData.getStdout() != null)
+                    Log.e(TAG, "Node standard output: " + evData.getStdout());
+
             case NODE_STOPPED:
-                Log.d(TAG, "Received NODE_STOPPED");
+                if (ev == NodeThreadEvent.NODE_STOPPED)
+                    Log.d(TAG, "Received NODE_STOPPED");
+
                 updateOnServiceStopped();
                 break;
         }
