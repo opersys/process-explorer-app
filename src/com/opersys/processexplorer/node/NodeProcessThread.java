@@ -5,6 +5,8 @@ import android.util.Log;
 import com.opersys.processexplorer.ProcessExplorerService;
 
 import java.io.*;
+import java.util.Timer;
+import java.util.TimerTask;
 
 /**
  * Simple process listener thread.
@@ -26,6 +28,7 @@ public class NodeProcessThread extends Thread {
 
     public void stopProcess() {
         DataOutputStream os;
+        Timer tm;
 
         os = new DataOutputStream(nodeProcess.getOutputStream());
 
@@ -34,12 +37,15 @@ public class NodeProcessThread extends Thread {
             os.flush();
 
             nodeProcess.getOutputStream().close();
-
-            Log.d(TAG, "Sending 'quit' command");
-
-            // This asks the process to stop itself.
             isStopping = true;
-            this.interrupt();
+            tm = new Timer("nodeKill", true);
+            tm.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    Log.w(TAG, "The node process didn't end in a timely manner, destroying it");
+                    nodeProcess.destroy();
+                }
+            }, 5000);
 
         } catch (IOException e) {
             // If we could not send the quit command to the process, forcefully
@@ -98,9 +104,6 @@ public class NodeProcessThread extends Thread {
                 try {
                     nodeProcess.waitFor();
 
-                    // At this point, the process is stopped, break out of the loop.
-                    break;
-
                 } catch (InterruptedException e) {
                     Log.i(TAG, "Interrupting wait on Node process");
                 }
@@ -121,13 +124,6 @@ public class NodeProcessThread extends Thread {
 
             } catch (IOException ex) {
                 Log.e(TAG, "Exception reading error output", ex);
-            }
-
-            // This will make sure we give enough time for the process to die.
-            try {
-                nodeProcess.waitFor();
-            } catch (InterruptedException ex) {
-                Log.i(TAG, "Last ditch waitFor interrupted... nevermind that.");
             }
 
             if (nodeProcess.exitValue() == 0) {
