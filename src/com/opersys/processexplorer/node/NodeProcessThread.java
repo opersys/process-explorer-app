@@ -109,21 +109,6 @@ public class NodeProcessThread extends Thread {
             sin = new StringBuffer();
             serr = new StringBuffer();
 
-            // Read the outputs
-            try {
-                Log.d(TAG, "Reading output stream");
-
-                if (nodeProcess.getInputStream() != null) {
-                    bin = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
-                    while ((s = bin.readLine()) != null)
-                        sin.append(s);
-                }
-                Log.d(TAG, "Done reading output stream");
-
-            } catch (IOException ex) {
-                Log.e(TAG, "Exception reading standard input", ex);
-            }
-
             try {
                 Log.d(TAG, "Reading error stream");
 
