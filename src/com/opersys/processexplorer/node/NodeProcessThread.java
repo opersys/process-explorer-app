@@ -35,6 +35,10 @@ public class NodeProcessThread extends Thread {
 
             nodeProcess.getOutputStream().close();
 
+            Log.d(TAG, "Sending 'quit' command");
+
+            // This asks the process to stop itself.
+            isStopping = true;
             this.interrupt();
 
         } catch (IOException e) {
@@ -44,9 +48,6 @@ public class NodeProcessThread extends Thread {
             Log.w(TAG, "Could not send quite command to process, destroying it.");
             nodeProcess.destroy();
         }
-
-        // This asks the process to stop itself.
-        isStopping = true;
     }
 
     public void startProcess() {
@@ -110,21 +111,29 @@ public class NodeProcessThread extends Thread {
 
             // Read the outputs
             try {
+                Log.d(TAG, "Reading output stream");
+
                 if (nodeProcess.getInputStream() != null) {
                     bin = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
                     while ((s = bin.readLine()) != null)
                         sin.append(s);
                 }
+                Log.d(TAG, "Done reading output stream");
+
             } catch (IOException ex) {
                 Log.e(TAG, "Exception reading standard input", ex);
             }
 
             try {
+                Log.d(TAG, "Reading error stream");
+
                 if (nodeProcess.getErrorStream() != null) {
                     berr = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
                     while ((s = berr.readLine()) != null)
                         serr.append(s);
                 }
+                Log.d(TAG, "Done reading error stream");
+
             } catch (IOException ex) {
                 Log.e(TAG, "Exception reading error output", ex);
             }
