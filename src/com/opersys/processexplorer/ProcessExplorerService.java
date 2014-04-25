@@ -122,6 +122,7 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
         addNodeThreadListener(this);
 
         nodeThread.setEnvironment("PORT", sharedPrefs.getString("nodePort", "3000"));
+        nodeThread.setEnvironment("ENV", "production");
         nodeThread.setUncaughtExceptionHandler(this);
         nodeThread.startProcess();
     }
