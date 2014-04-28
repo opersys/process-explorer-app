@@ -86,8 +86,8 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         AssetExtractTask extractTask;
 
         extractTaskParams = new AssetExtractTaskParams();
-        extractTaskParams.assetPath = "system-explorer.zip";
-        extractTaskParams.assetMd5sumPath = "system-explorer.zip.md5sum";
+        extractTaskParams.assetPath = "process-explorer.zip";
+        extractTaskParams.assetMd5sumPath = "process-explorer.zip.md5sum";
         extractTaskParams.extractPath = getFilesDir();
         extractTaskParams.assetManager = getAssets();
 
