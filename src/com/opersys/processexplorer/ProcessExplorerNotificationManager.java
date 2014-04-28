@@ -5,6 +5,8 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.support.v4.app.NotificationCompat;
 import com.opersys.processexplorer.node.NodeThreadEvent;
 import com.opersys.processexplorer.node.NodeThreadEventData;
@@ -30,10 +32,13 @@ public class ProcessExplorerNotificationManager implements NodeThreadListener {
         notifPendingIntent = PendingIntent.getActivity(
                 nodeService, 0, notifIntent, PendingIntent.FLAG_UPDATE_CURRENT);
 
+        Bitmap bm = BitmapFactory.decodeResource(nodeService.getResources(), R.drawable.icon_48x48_launcher);
+
         notifBuilder = new NotificationCompat.Builder(nodeService)
                 .setContentText("Process Explorer")
                 .setContentIntent(notifPendingIntent)
-                .setSmallIcon(R.drawable.icon)
+                .setSmallIcon(R.drawable.icon_24x24_notif)
+                .setLargeIcon(bm)
                 .setOngoing(true);
 
         nodeService.addNodeThreadListener(this);
