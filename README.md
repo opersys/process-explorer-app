@@ -1,8 +1,3 @@
-# Author(s)
-
-François-Denis Gonthier <francois-denis.gonthier@opersys.com> is the sole
-author of the code.
-
 # Generating the required assets.
 
 In order to function, this project needs the following assets in the
@@ -23,3 +18,8 @@ application right in the shell using the following command _as root_:
 
 Of course, the device must be connected and accessible through adb
 for this command to work.
+
+# Contributors
+
+François-Denis Gonthier francois-denis.gonthier@opersys.com -- main developer and maintainer
+Karim Yaghmour karim.yaghmour@opersys.com -- ideas and other forms of entertainment
