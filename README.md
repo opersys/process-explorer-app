@@ -19,7 +19,7 @@ The READ_LOGS permission is not automatically granted to applications
 even when the require it. It needs to be manually granted to the
 application right in the shell using the following command _as root_:
 
-# adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
+    # adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
 
 Of course, the device must be connected and accessible through adb
 for this command to work.
