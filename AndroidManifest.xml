@@ -20,7 +20,9 @@
         under the License.
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-          package="com.opersys.processexplorer">
+          package="com.opersys.processexplorer"
+          android:versionCode="1"
+          android:versionName="0.9">
 
     <uses-sdk android:targetSdkVersion="10"
               android:minSdkVersion="10" />
