@@ -142,7 +142,7 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         servConn = new ProcessExplorerServiceConnection(this);
 
         /*
-         * FIXME: I'm absolutely not sure we can call bindService immediately after bindService but
+         * FIXME: I'm absolutely not sure we can call bindService immediately after startService but
          * I haven't found anything in the documentation that says otherwise.
          */
         if (startService(servIntent) != null)
