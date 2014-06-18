@@ -61,7 +61,8 @@ public class NodeProcessThread extends Thread {
                 @Override
                 public void run() {
                     Log.w(TAG, "The node process didn't end in a timely manner, destroying it");
-                    nodeProcess.destroy();
+                    if (nodeProcess != null)
+                        nodeProcess.destroy();
                 }
             }, 5000);
 
