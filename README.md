@@ -21,5 +21,5 @@ for this command to work.
 
 # Contributors
 
-François-Denis Gonthier francois-denis.gonthier@opersys.com -- main developer and maintainer
-Karim Yaghmour karim.yaghmour@opersys.com -- ideas and other forms of entertainment
+* François-Denis Gonthier francois-denis.gonthier@opersys.com -- main developer and maintainer
+* Karim Yaghmour karim.yaghmour@opersys.com -- ideas and other forms of entertainment
