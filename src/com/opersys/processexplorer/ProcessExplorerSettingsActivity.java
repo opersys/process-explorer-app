@@ -221,6 +221,11 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
         new LocalIPAddressTask() {
             @Override
             public void onPostExecute(InetAddress inetAddress) {
+                if (inetAddress == null) {
+                    findPreference("browseNow").setSummary("Could not find the local IP address");
+                    return;
+                }
+
                 int port = Integer.parseInt(sharedPrefs.getString("nodePort", "3000"));
                 URL url;
 
