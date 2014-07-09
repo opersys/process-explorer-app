@@ -67,7 +67,25 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
 
     protected void chmod(String mode, String target) {
         Process chmodProcess;
-        String[] chmodArr = { "/system/bin/chmod", mode, target };
+        String[] chmodArr = { null, mode, target }, paths;
+        String pathEnv;
+
+        pathEnv = System.getenv("PATH");
+        paths = pathEnv.split(":");
+
+        for (String path : paths) {
+            File chmodFile = new File(path + "/chmod");
+
+            if (chmodFile.exists() && chmodFile.canExecute()) {
+                chmodArr[0] = chmodFile.getAbsolutePath();
+                break;
+            }
+        }
+
+        if (chmodArr[0] == null) {
+            Log.e(TAG, "Could not find an executable 'chmod' binary");
+            return;
+        }
 
         try {
             chmodProcess = Runtime.getRuntime().exec(chmodArr);
