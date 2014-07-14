@@ -56,7 +56,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
             public boolean onPreferenceClick(Preference preference) {
                 serviceBinder.startServiceThreads();
 
-
                 return true;
             }
         });
