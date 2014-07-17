@@ -18,6 +18,7 @@ package com.opersys.processexplorer.tasks;
 
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
 
 import java.io.*;
@@ -119,10 +120,17 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
         ZipFile zf;
         InputStream is;
         OutputStream os;
+        String archId;
         String assetPath = params[0].assetPath;
         File extractPath = params[0].extractPath;
         AssetManager assetManager = params[0].assetManager;
         ZipEntry zentry = null;
+
+        // Architecture string.
+        if (Build.VERSION.SDK_INT > 16)
+            archId = "arm_pie";
+        else
+            archId = "arm";
 
         zipFile = new File(extractPath + File.separator + assetPath);
 
@@ -147,6 +155,9 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
                 final File outputTarget = new File(extractPath, zentry.getName());
 
                 if (zentry.isDirectory()) {
+                    if (zentry.getName().startsWith("_bin"))
+                        continue;
+
                     if (!outputTarget.exists()) {
                         if (!outputTarget.mkdirs()) {
                             String s = String.format("Couldn't create directory %s.", outputTarget.getAbsolutePath());
@@ -156,18 +167,31 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
                 } else {
                     final File parentTarget = new File(outputTarget.getParent());
 
-                    // Make the parent directory if it doesn't exists.
-                    if (!parentTarget.exists())
-                    {
-                        if (!parentTarget.mkdirs()) {
-                            String s = String.format("Couldn't create directory %s.", parentTarget.toString());
-                            throw new IllegalStateException(s);
-                        }
-                    }
+                    // The binaries will be copied in the extraction root based on their name
+                    if (zentry.getName().startsWith("_bin")) {
+                        if (zentry.getName().endsWith(archId)) {
+                            String binPath = zentry.getName().replace("_bin/", "").replace("." + archId, "");
+                            File binTarget = new File(extractPath, binPath);
+                            OutputStream binFileStream = new FileOutputStream(binTarget);
 
-                    final OutputStream outputFileStream = new FileOutputStream(outputTarget);
-                    copyStream(zf.getInputStream(zentry), outputFileStream);
-                    outputFileStream.close();
+                            copyStream(zf.getInputStream(zentry), binFileStream);
+                        }
+                        else continue;
+
+                    } else {
+                        // Make the parent directory if it doesn't exists.
+                        if (!parentTarget.exists())
+                        {
+                            if (!parentTarget.mkdirs()) {
+                                String s = String.format("Couldn't create directory %s.", parentTarget.toString());
+                                throw new IllegalStateException(s);
+                            }
+                        }
+
+                        OutputStream outputFileStream = new FileOutputStream(outputTarget);
+                        copyStream(zf.getInputStream(zentry), outputFileStream);
+                        outputFileStream.close();
+                    }
 
                     Log.d(TAG, "Done " + outputTarget.toString() + " (" + zentry.getSize() + ")");
 
