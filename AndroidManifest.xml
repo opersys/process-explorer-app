@@ -21,8 +21,8 @@
 -->
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
           package="com.opersys.processexplorer"
-          android:versionCode="5"
-          android:versionName="0.9.3">
+          android:versionCode="6"
+          android:versionName="0.9.4">
 
     <uses-sdk android:targetSdkVersion="10"
               android:minSdkVersion="10" />
