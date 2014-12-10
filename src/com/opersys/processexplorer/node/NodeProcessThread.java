@@ -42,34 +42,27 @@ public class NodeProcessThread extends Thread {
     private ProcessExplorerService service;
     private Process nodeProcess;
 
-    private boolean isStopping;
+    private Timer tm;
 
     public void stopProcess() {
-        DataOutputStream os;
-        Timer tm;
-
-        os = new DataOutputStream(nodeProcess.getOutputStream());
+        // Prepare a forcekill timer *just in case*...
+        tm.schedule(new TimerTask() {
+            @Override
+            public void run() {
+            Log.w(TAG, "The node process didn't end in a timely manner, destroying it");
+            nodeProcess.destroy();
+            }
+        }, 5000);
 
         try {
-            os.writeChars("quit\n");
-            os.flush();
-
-            nodeProcess.getOutputStream().close();
-            isStopping = true;
-            tm = new Timer("nodeKill", true);
-            tm.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    Log.w(TAG, "The node process didn't end in a timely manner, destroying it");
-                    nodeProcess.destroy();
-                }
-            }, 5000);
-
+            OutputStream stdin = nodeProcess.getOutputStream();
+            stdin.write("quit\n".getBytes());
+            stdin.flush();
+            stdin.close();
         } catch (IOException e) {
             // If we could not send the quit command to the process, forcefully
-            // destroy it. This means we will not be able to read the streams but
-            // that is preferrable to having the process stick around.
-            Log.w(TAG, "Could not send quite command to process, destroying it.");
+            // destroy it now.
+            Log.w(TAG, "Could not send quit command to process, destroying it.");
             nodeProcess.destroy();
         }
     }
@@ -86,9 +79,9 @@ public class NodeProcessThread extends Thread {
 
     @Override
     public void run() {
-        final StringBuffer sin, serr;
+        final StringBuffer sout, serr;
         final NodeThreadEventData emptyEventData;
-        BufferedReader bin, berr;
+        BufferedReader processOutput;
         String s;
 
         emptyEventData = new NodeThreadEventData();
@@ -105,64 +98,75 @@ public class NodeProcessThread extends Thread {
                     .directory(new File(dir))
                     .command(exec, js);
 
-            if (!isStopping) {
-                nodeProcess = nodeProcessBuilder.start();
+            nodeProcess = nodeProcessBuilder.start();
 
-                msgHandler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        service.fireNodeServiceEvent(NodeThreadEvent.NODE_STARTED, emptyEventData);
-                    }
-                });
-            }
-
-            // Loops through interruption if the interruption was not caused by the
-            // process being asked to stop.
-            while (!isStopping) {
-                try {
-                    nodeProcess.waitFor();
-
-                } catch (InterruptedException e) {
-                    Log.i(TAG, "Interrupting wait on Node process");
+            msgHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    service.fireNodeServiceEvent(NodeThreadEvent.NODE_STARTED, emptyEventData);
                 }
+            });
+
+            // Wait for the process to quit
+            try {
+                nodeProcess.waitFor();
+            } catch (InterruptedException e) {
+                Log.i(TAG, "Interrupting wait on Node process");
             }
 
-            sin = new StringBuffer();
+            // Successful (nor not) quit, cancel all the things
+            tm.cancel();
+
+            // nodejs stdout / stderr
+            sout = new StringBuffer();
             serr = new StringBuffer();
 
             try {
-                Log.d(TAG, "Reading error stream");
+                Log.d(TAG, "Reading process stdout...");
+                if (nodeProcess.getInputStream() != null) {
+                    processOutput = new BufferedReader(new InputStreamReader(nodeProcess.getInputStream()));
 
-                if (nodeProcess.getErrorStream() != null) {
-                    berr = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
-                    while ((s = berr.readLine()) != null)
+                    while ((s = processOutput.readLine()) != null) {
                         serr.append(s);
+                    }
                 }
-                Log.d(TAG, "Done reading error stream");
+
+                Log.d(TAG, "Reading process stderr...");
+                if (nodeProcess.getErrorStream() != null) {
+                    processOutput = new BufferedReader(new InputStreamReader(nodeProcess.getErrorStream()));
+
+                    while ((s = processOutput.readLine()) != null) {
+                        serr.append(s);
+                    }
+                }
+
+                Log.d(TAG, "Done reading stdout/stderr.");
 
             } catch (IOException ex) {
-                Log.e(TAG, "Exception reading error output", ex);
+                Log.e(TAG, "Exception while reading stdout/stderr!", ex);
             }
 
             if (nodeProcess.exitValue() == 0) {
+                // Process exited as we asked for
                 msgHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         service.fireNodeServiceEvent(NodeThreadEvent.NODE_STOPPED,
-                                new NodeThreadEventData(sin.toString(), serr.toString()));
+                                new NodeThreadEventData(sout.toString(), serr.toString()));
                     }
                 });
             } else {
+                // Process couldn't exit successfully
                 msgHandler.post(new Runnable() {
                     @Override
                     public void run() {
                         service.fireNodeServiceEvent(NodeThreadEvent.NODE_ERROR,
-                                new NodeThreadEventData(sin.toString(), serr.toString()));
+                                new NodeThreadEventData(sout.toString(), serr.toString()));
                     }
                 });
             }
-
         } catch (IOException e) {
+            // An error launching node process?
             final NodeThreadEventData evData = new NodeThreadEventData(e);
 
             msgHandler.post(new Runnable() {
@@ -184,6 +188,7 @@ public class NodeProcessThread extends Thread {
                              String jsfile,
                              Handler msgHandler,
                              ProcessExplorerService service) {
+
         this.dir = dir;
         this.msgHandler = msgHandler;
         this.service = service;
@@ -191,6 +196,8 @@ public class NodeProcessThread extends Thread {
         this.js = dir + "/" + jsfile;
 
         this.nodeProcessBuilder = new ProcessBuilder();
-    }
 
+        // A forcekill timer used in case nodeprocess becomes unresponsive
+        this.tm = new Timer("nodeKill", true);
+    }
 }
