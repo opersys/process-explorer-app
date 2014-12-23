@@ -1,5 +1,15 @@
 apply plugin: 'com.android.application'
 
+preBuild.doFirst {
+    if (!file("./src/main/assets/process-explorer.zip").exists() ||
+        !file("./src/main/assets/process-explorer.zip.md5sum").exists()) {
+        logger.warn("WARNING: Building without required assets. Do not expect this\
+ application to work without them. See the README file for more information.")
+        logger.warn("\tprocess-explorer.zip")
+        logger.warn("\tprocess-explorer.zip.md5sum")
+    }
+}
+
 android {
     compileSdkVersion 10
     buildToolsVersion "21.1.1"
