@@ -1,0 +1,35 @@
+apply plugin: 'com.android.application'
+
+preBuild.doFirst {
+    if (!file("./src/main/assets/process-explorer.zip").exists() ||
+        !file("./src/main/assets/process-explorer.zip.md5sum").exists()) {
+        logger.warn("WARNING: Building without required assets. Do not expect this\
+ application to work without them. See the README file for more information.")
+        logger.warn("\tprocess-explorer.zip")
+        logger.warn("\tprocess-explorer.zip.md5sum")
+    }
+}
+
+android {
+    compileSdkVersion 10
+    buildToolsVersion "21.1.1"
+
+    defaultConfig {
+        applicationId "com.opersys.processexplorer"
+        minSdkVersion 10
+        targetSdkVersion 10
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.txt'
+        }
+    }
+}
+
+dependencies {
+    compile files('libs/commons-compress-1.7.jar')
+    compile files('libs/org.restlet.jar')
+    compile 'com.android.support:support-v4:21.0.2'
+}

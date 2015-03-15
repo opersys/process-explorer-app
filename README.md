@@ -21,11 +21,30 @@ Generating the required assets
 In order to function, this project needs the following assets found in the
 [process-explorer-web](https://github.com/opersys/process-explorer-web) project:
 
-* assets/process-explorer.zip
-* assets/process-explorer.zip.md5sum
+* app/src/main/assets/process-explorer.zip
+* app/src/main/assets/process-explorer.zip.md5sum
 
 This application won't function properly without these assets.
 
+Building an APK
+---------------
+
+This project uses `gradle` in order to build and package this application.
+
+Simply run the following:
+
+    gradlew assemble
+
+And you will find the artefacts in `app/build/outputs/apk/`.
+
+Installing
+----------
+
+Use `adb` to install the application in Android:
+
+    adb install app/build/outputs/apk/app-release-unsigned.apk
+
+>>>>>>> origin/master
 Logcat fix
 ----------
 
