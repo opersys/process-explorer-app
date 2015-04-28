@@ -24,6 +24,8 @@ import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.Toast;
+
 import com.opersys.processexplorer.node.NodeProcessThread;
 import com.opersys.processexplorer.node.NodeThreadEvent;
 import com.opersys.processexplorer.node.NodeThreadEventData;
@@ -135,6 +137,7 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         nodeThread = new NodeProcessThread(getFilesDir().toString(), "node", "app.js",
+                sharedPrefs.getBoolean("asRoot", false),
                 new NodeProcessHandler(),
                 this);
 
@@ -188,10 +191,23 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
     @Override
     public void ProcessExplorerServiceEvent(NodeThreadEvent ev, NodeThreadEventData evData) {
+        SharedPreferences sharedPrefs;
+        String msg;
+
+        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
         switch (ev) {
             case NODE_STOPPED:
             case NODE_ERROR:
                 nodeThread = null;
+                if (sharedPrefs.getBoolean("asRoot", false)) {
+                    msg = "Could not start the File Explorer service as root. Check that root access is allowed.";
+                }
+                else {
+                    msg = "Could not start the File Explorer service. Check the logcat for more informations.";
+                }
+
+                Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
         }
     }
 

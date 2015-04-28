@@ -37,6 +37,8 @@ public class NodeProcessThread extends Thread {
     private String dir;
     private String exec;
     private String js;
+    private String suExec;
+    private boolean asRoot;
 
     private Handler msgHandler;
     private ProcessExplorerService service;
@@ -94,9 +96,16 @@ public class NodeProcessThread extends Thread {
                 }
             });
 
-            nodeProcessBuilder
+            if (asRoot && suExec != null) {
+                nodeProcessBuilder
+                    .directory(new File(dir))
+                    .command(suExec, "-c", "cd " + dir + " && " + exec + " " + js);
+            }
+            else {
+                nodeProcessBuilder
                     .directory(new File(dir))
                     .command(exec, js);
+            }
 
             nodeProcess = nodeProcessBuilder.start();
 
@@ -186,14 +195,24 @@ public class NodeProcessThread extends Thread {
     public NodeProcessThread(String dir,
                              String execfile,
                              String jsfile,
+                             boolean asRoot,
                              Handler msgHandler,
                              ProcessExplorerService service) {
+        String[] suFiles = { "/system/xbin/su", "/system/bin/su" };
+
+        for (String sf : suFiles) {
+            if (new File(sf).exists()) {
+                this.suExec = sf;
+            }
+        }
 
         this.dir = dir;
         this.msgHandler = msgHandler;
         this.service = service;
         this.exec = dir + "/"+ execfile;
         this.js = dir + "/" + jsfile;
+        this.exec = dir + "/"+ execfile;
+        this.asRoot = asRoot;
 
         this.nodeProcessBuilder = new ProcessBuilder();
 

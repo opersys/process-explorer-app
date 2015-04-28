@@ -15,6 +15,11 @@
         android:title="Start on power-on"
         android:summary="Make the service start on the device bootup" />
 
+    <CheckBoxPreference
+        android:key="asRoot"
+        android:title="Run as root"
+        android:summary="Run the backend service as root if possible" />
+
     <Preference
         android:key="startNow"
         android:title="Start the service" />
