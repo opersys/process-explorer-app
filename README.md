@@ -33,7 +33,7 @@ This project uses `gradle` in order to build and package this application.
 
 Simply run the following in the `process-explorer-app` root directory:
 
-> ./gradlew build
+> $ ./gradlew build
 
 And you will find the build artefacts in `app/build/outputs/apk/`.
 
@@ -42,7 +42,7 @@ Installing
 
 Use `adb` to install the application in Android:
 
-> adb install app/build/outputs/apk/app-debug.apk
+> $ adb install app/build/outputs/apk/app-debug.apk
 
 Logcat fix
 ----------
@@ -51,7 +51,7 @@ The `READ_LOGS` permission is not automatically granted to applications
 even when the application requires it. It needs to be manually granted to the
 application right in the shell using the following command:
 
-> adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
+> $ adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
 
 Using Process Explorer
 ======================
@@ -59,9 +59,26 @@ Using Process Explorer
 Once it has been installed on your device, you should simply probably forward
 TCP/3000 to be able to browse the nodejs app.
 
-> adb forward tcp:3000 tcp:3000
+> $ adb forward tcp:3000 tcp:3000
 
 Then simply browse to [http://localhost:3000](http://localhost:3000) !
+
+Note about running as root
+--------------------------
+
+You will probably want to run Process Explorer service as root since it will
+let you manage the processes on your device / emulator. On rooted device, you
+can simply enable the `Run as root` option.
+
+On the AOSP emulator, you will have to start the service by hand, running the
+following on your host:
+
+> $ adb shell "cd /data/user/0/com.opersys.processexplorer/files && ./node ./app.js"
+
+This is launching the Process Explorer application with the Node.js daemon.
+
+On an unrooted device, you won't be able to get process details or send signals
+to process.
 
 Licensing
 =========
