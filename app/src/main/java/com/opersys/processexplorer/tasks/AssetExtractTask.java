@@ -18,13 +18,13 @@ package com.opersys.processexplorer.tasks;
 
 import android.content.res.AssetManager;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.util.Log;
-import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
-import org.apache.commons.compress.archivers.zip.ZipFile;
-import org.apache.commons.compress.utils.IOUtils;
 
 import java.io.*;
 import java.util.Enumeration;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 /**
  * Author: François-Denis Gonthier (francois-denis.gonthier@opersys.com)
@@ -34,6 +34,8 @@ import java.util.Enumeration;
 public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams, Integer, Void> {
 
     private static final String TAG = "AssetExtractTask";
+
+    private static final int DEFAULT_BUFFER_SIZE = 1024 * 4;
 
     public static boolean isExtractRequired(AssetExtractTaskParams params) {
         AssetManager assetManager;
@@ -80,6 +82,19 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
         }
     }
 
+    protected long copyStream(final InputStream input, final OutputStream output) throws IOException {
+        byte[] buffer = new byte[DEFAULT_BUFFER_SIZE];
+        int n = 0;
+        long count = 0;
+
+        while ((n = input.read(buffer)) != -1) {
+            output.write(buffer, 0, n);
+            count += n;
+        }
+
+        return count;
+    }
+
     @Override
     protected Void doInBackground(AssetExtractTaskParams... params) {
         int totalSize = 0, partialSize = 0;
@@ -87,10 +102,19 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
         ZipFile zf;
         InputStream is;
         OutputStream os;
+        String arch, archId;
         String assetPath = params[0].assetPath;
         File extractPath = params[0].extractPath;
         AssetManager assetManager = params[0].assetManager;
-        ZipArchiveEntry zentry = null;
+        ZipEntry zentry = null;
+
+        // Architecture. FIXME: Defaults to ARM. Should error out instead.
+        if (Build.CPU_ABI.contains("x86"))
+            arch = "ia32";
+        else
+            arch = "arm";
+
+        archId = arch;
 
         zipFile = new File(extractPath + File.separator + assetPath);
 
@@ -98,23 +122,26 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
             is = assetManager.open(assetPath);
             os = new FileOutputStream(zipFile);
 
-            IOUtils.copy(is, os);
+            copyStream(is, os);
 
             zf = new ZipFile(zipFile);
 
-            for (Enumeration<ZipArchiveEntry> ez = zf.getEntries(); ez.hasMoreElements();) {
+            for (Enumeration<? extends ZipEntry> ez = zf.entries(); ez.hasMoreElements(); ) {
                 zentry = ez.nextElement();
                 totalSize += zentry.getSize();
             }
 
             Log.d(TAG, "Total size of entries is: " + totalSize);
 
-            for (Enumeration<ZipArchiveEntry> ez = zf.getEntries(); ez.hasMoreElements();) {
+            for (Enumeration<? extends ZipEntry> ez = zf.entries(); ez.hasMoreElements(); ) {
                 zentry = ez.nextElement();
 
                 final File outputTarget = new File(extractPath, zentry.getName());
 
                 if (zentry.isDirectory()) {
+                    if (zentry.getName().startsWith("_bin"))
+                        continue;
+
                     if (!outputTarget.exists()) {
                         if (!outputTarget.mkdirs()) {
                             String s = String.format("Couldn't create directory %s.", outputTarget.getAbsolutePath());
@@ -124,23 +151,34 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
                 } else {
                     final File parentTarget = new File(outputTarget.getParent());
 
-                    // Make the parent directory if it doesn't exists.
-                    if (!parentTarget.exists())
-                    {
-                        if (!parentTarget.mkdirs()) {
-                            String s = String.format("Couldn't create directory %s.", parentTarget.toString());
-                            throw new IllegalStateException(s);
-                        }
-                    }
+                    // The binaries will be copied in the extraction root based on their name
+                    if (zentry.getName().startsWith("_bin")) {
+                        if (zentry.getName().endsWith(archId)) {
+                            String binPath = zentry.getName().replace("_bin/", "").replace("." + archId, "");
+                            File binTarget = new File(extractPath, binPath);
+                            OutputStream binFileStream = new FileOutputStream(binTarget);
 
-                    final OutputStream outputFileStream = new FileOutputStream(outputTarget);
-                    IOUtils.copy(zf.getInputStream(zentry), outputFileStream);
-                    outputFileStream.close();
+                            copyStream(zf.getInputStream(zentry), binFileStream);
+                        } else continue;
+
+                    } else {
+                        // Make the parent directory if it doesn't exists.
+                        if (!parentTarget.exists()) {
+                            if (!parentTarget.mkdirs()) {
+                                String s = String.format("Couldn't create directory %s.", parentTarget.toString());
+                                throw new IllegalStateException(s);
+                            }
+                        }
+
+                        OutputStream outputFileStream = new FileOutputStream(outputTarget);
+                        copyStream(zf.getInputStream(zentry), outputFileStream);
+                        outputFileStream.close();
+                    }
 
                     Log.d(TAG, "Done " + outputTarget.toString() + " (" + zentry.getSize() + ")");
 
                     partialSize += zentry.getSize();
-                    onProgressUpdate((int)(((float)partialSize / (float)totalSize) * 100.0));
+                    onProgressUpdate((int) (((float) partialSize / (float) totalSize) * 100.0));
                 }
             }
         } catch (IOException ex) {
@@ -157,7 +195,7 @@ public abstract class AssetExtractTask extends AsyncTask<AssetExtractTaskParams,
             is = assetManager.open(params[0].assetMd5sumPath);
             os = new FileOutputStream(new File(extractPath + File.separator + "md5sum"));
 
-            IOUtils.copy(is, os);
+            copyStream(is, os);
 
             is.close();
             os.close();
