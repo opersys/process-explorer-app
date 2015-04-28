@@ -15,8 +15,8 @@ Process Explorer is also available on [Google Play](https://play.google.com/stor
 Installation
 ============
 
-Generating the required assets
-------------------------------
+Required assets
+---------------
 
 In order to function, this project needs the following assets found in the
 [process-explorer-web](https://github.com/opersys/process-explorer-web) project:
@@ -31,38 +31,35 @@ Building an APK
 
 This project uses `gradle` in order to build and package this application.
 
-Simply run the following:
+Simply run the following in the `process-explorer-app` root directory:
 
-    gradlew assemble
+> ./gradlew build
 
-And you will find the artefacts in `app/build/outputs/apk/`.
+And you will find the build artefacts in `app/build/outputs/apk/`.
 
 Installing
 ----------
 
 Use `adb` to install the application in Android:
 
-    adb install app/build/outputs/apk/app-release-unsigned.apk
+> adb install app/build/outputs/apk/app-debug.apk
 
 Logcat fix
 ----------
 
 The `READ_LOGS` permission is not automatically granted to applications
-even when the require it. It needs to be manually granted to the
+even when the application requires it. It needs to be manually granted to the
 application right in the shell using the following command:
 
-    adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
-
-Of course, the device must be connected and accessible through adb
-for this command to work.
+> adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS
 
 Using Process Explorer
-----------------------
+======================
 
-Once it has been installed on your device, simply you should probably forward
+Once it has been installed on your device, you should simply probably forward
 TCP/3000 to be able to browse the nodejs app.
 
-    adb forward tcp:3000 tcp:3000
+> adb forward tcp:3000 tcp:3000
 
 Then simply browse to [http://localhost:3000](http://localhost:3000) !
 
