@@ -19,10 +19,7 @@ package com.opersys.processexplorer.tasks;
 import android.os.AsyncTask;
 import android.util.Log;
 
-import java.net.Inet4Address;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.net.SocketException;
+import java.net.*;
 import java.util.Enumeration;
 
 /**
@@ -37,6 +34,7 @@ public abstract class LocalIPAddressTask extends AsyncTask<Void, Void, InetAddre
         try {
             NetworkInterface intf;
             InetAddress inetAddress;
+            InetAddress loopbackInetAddress = null;
 
             for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
                  en.hasMoreElements() ;) {
@@ -48,10 +46,25 @@ public abstract class LocalIPAddressTask extends AsyncTask<Void, Void, InetAddre
 
                     inetAddress = enumIpAddr.nextElement();
 
-                    if (!inetAddress.isLoopbackAddress() && inetAddress instanceof Inet4Address)
-                        return inetAddress;
+                    if (inetAddress instanceof Inet6Address) {
+                        Log.d(TAG, "IPv6: " + inetAddress.toString() + " --> Discarding");
+                        continue;
+                    }
+
+                    if (inetAddress instanceof Inet4Address) {
+                        if (!inetAddress.isLoopbackAddress()) {
+                            Log.d(TAG, "IPv4: " + inetAddress.toString() + " --> OK!");
+                            return inetAddress;
+                        }
+
+                        // Keep the loopback in case we don't find an IPv4 iface
+                        loopbackInetAddress = inetAddress;
+                    }
                 }
             }
+
+            // If we haven't returned yet an IPv4 interface, return the loopback address
+            return loopbackInetAddress;
         } catch (SocketException ex) {
             Log.e(TAG, ex.toString());
         }
