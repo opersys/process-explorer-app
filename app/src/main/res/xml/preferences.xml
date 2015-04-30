@@ -3,6 +3,7 @@
                   android:layout_width="match_parent"
                   android:layout_height="match_parent">
 
+    <PreferenceCategory android:title="Settings" >
     <com.opersys.processexplorer.misc.IPPortEditTextPreference
             android:key="nodePort"
             android:title="Port"
@@ -23,11 +24,13 @@
         android:key="stopNow"
         android:enabled="false"
         android:title="Stop the service" />
+    </PreferenceCategory>
 
-    <Preference
-        android:key="browseNow"
-        android:enabled="false"
-        android:summary="Not started"
-        android:title="Browse the Process Explorer" />
+    <PreferenceCategory android:title="Instructions">
+        <Preference android:key="pe_instructions"
+            android:title="On your host"
+            android:summary="Service not started"
+            android:enabled="false" />
+    </PreferenceCategory>
 
 </PreferenceScreen>
