@@ -19,7 +19,6 @@ package com.opersys.processexplorer;
 import android.app.ProgressDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.Preference;
 import android.preference.PreferenceActivity;
@@ -45,10 +44,6 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
     protected ProcessExplorerServiceConnection servConn;
 
     protected void prepareLayout() {
-        final SharedPreferences sharedPrefs;
-
-        sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-
         addPreferencesFromResource(R.xml.preferences);
 
         findPreference("startNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {

@@ -16,6 +16,7 @@
 
 package com.opersys.processexplorer;
 
+import android.app.Notification;
 import android.app.Service;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -23,6 +24,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.preference.PreferenceManager;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -48,10 +50,13 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
     }
 
     private static final String TAG = "ProcessExplorerService";
+    private static final int SERVICE_NOTIF_ID = 1;
 
     private List<NodeThreadListener> serviceListeners = new ArrayList<NodeThreadListener>();
 
     protected ProcessExplorerNotificationManager notifMgr;
+
+    protected NotificationCompat.Builder notifBuilder;
 
     private NodeProcessThread nodeThread;
     private PlatformInfoServer platformInfoServer;
@@ -59,6 +64,19 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
     public void fireNodeServiceEvent(NodeThreadEvent ev, NodeThreadEventData evData) {
         for (NodeThreadListener serviceListener : this.serviceListeners)
             serviceListener.ProcessExplorerServiceEvent(ev, evData);
+    }
+
+    protected String getStatusToString(NodeThreadEvent ev) {
+        String contentText = null;
+
+        if (ev == NodeThreadEvent.NODE_STARTING)
+            contentText = "Starting";
+        else if (ev == NodeThreadEvent.NODE_STARTED)
+            contentText = "Started";
+        else if (ev == NodeThreadEvent.NODE_STOPPED || ev == NodeThreadEvent.NODE_ERROR)
+            contentText = "Stopped";
+
+        return contentText;
     }
 
     @Override
@@ -69,15 +87,25 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
+        boolean isBooting = false;
+
         startForeground(
                 notifMgr.getForegroundNotificationId(),
                 notifMgr.getForegroundNotification());
 
         // If this was called by the boot broadcast receiver, start the
         // node service immediately.
-        if (intent.getExtras() != null
-                && intent.getExtras().containsKey("booting")
-                && ((Boolean)intent.getExtras().get("booting")))
+        if (intent != null && intent.getExtras() != null) {
+
+            if (intent.getExtras().containsKey("booting")) {
+                Object objBooting;
+
+                objBooting = intent.getExtras().get("booting");
+                isBooting = (Boolean)objBooting;
+            }
+        }
+
+        if (isBooting)
             startServices();
 
         return super.onStartCommand(intent, flags, startId);
@@ -197,14 +225,22 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
         sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
 
         switch (ev) {
+            case NODE_STARTED:
+                startForeground(
+                        notifMgr.getForegroundNotificationId(),
+                        notifMgr.getForegroundNotification());
+                break;
+
             case NODE_STOPPED:
+                break;
+
             case NODE_ERROR:
                 nodeThread = null;
                 if (sharedPrefs.getBoolean("asRoot", false)) {
-                    msg = "Could not start the File Explorer service as root. Check that root access is allowed.";
+                    msg = "Could not start the Process Explorer service as root. Check that root access is allowed.";
                 }
                 else {
-                    msg = "Could not start the File Explorer service. Check the logcat for more informations.";
+                    msg = "Could not start the Process Explorer service. Check the logcat for more informations.";
                 }
 
                 Toast.makeText(getApplicationContext(), msg, Toast.LENGTH_LONG).show();
