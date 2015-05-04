@@ -72,6 +72,15 @@ public class ProcessExplorerSettingsActivity extends PreferenceActivity
                 return true;
             }
         });
+
+        findPreference("quitNow").setOnPreferenceClickListener(new Preference.OnPreferenceClickListener() {
+            @Override
+            public boolean onPreferenceClick(Preference preference) {
+                serviceBinder.stopServiceThreads();
+                Runtime.getRuntime().exit(0);
+                return true;
+            }
+        });
     }
 
     protected void checkExtractTask() {

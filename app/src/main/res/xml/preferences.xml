@@ -31,6 +31,11 @@
         android:title="Stop the service" />
     </PreferenceCategory>
 
+    <Preference
+        android:key="quitNow"
+        android:enabled="true"
+        android:title="Quit the application" />
+
     <PreferenceCategory android:title="Instructions">
         <Preference android:key="pe_instructions"
             android:title="Browse the Process Explorer"
