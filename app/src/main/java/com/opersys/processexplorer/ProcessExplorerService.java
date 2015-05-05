@@ -146,6 +146,8 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
     public void stopServices() {
         stopNodeProcess();
         stopPlatformInfoServer();
+
+         stopSelf();
     }
 
     protected void startNodeProcess() {
