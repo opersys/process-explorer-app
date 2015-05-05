@@ -68,17 +68,17 @@ Note about running as root
 --------------------------
 
 You will probably want to run Process Explorer service as root since it will
-let you manage the processes on your device / emulator. On rooted device, you
-can simply enable the `Run as root` option.
+let you manage the processes on your device / emulator. If you have one of the
+"su" apps install, you can simply enable the `Run as root` option.
 
-On the AOSP emulator, you will have to start the service by hand, running the
-following on your host:
+If you're using the AOSP emulator, run the following on your computer, you will 
+have to start the service by hand, running the following on your computer:
 
 > adb shell "cd /data/user/0/com.opersys.processexplorer/files && ./node ./app.js"
 
 This is launching the Process Explorer application with the Node.js daemon.
 
-On an unrooted device, you won't be able to get process details or send signals
+Without running as root, you won't be able to get process details or send signals
 to process.
 
 Licensing
