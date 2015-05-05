@@ -44,14 +44,14 @@
 
         <Preference android:key="readlogPermissionInstruction"
             android:title="Read log permission"
-            android:summary="Unless Process Explorer has the right to read logs, per-process logs will appear blank. Give Process Explorer the permission to read the logcat by running the following command your host:\n$ adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS"
+            android:summary="Unless Process Explorer has the right to read logs, per-process logs will appear blank. Give Process Explorer the permission to read the logcat by running the following command your computer:\n$ adb shell pm grant com.opersys.processexplorer android.permission.READ_LOGS"
             android:enabled="true"
             android:layout="@layout/preference" />
 
         <Preference
             android:key="runAsRootInstruction"
             android:title="Run Process Explorer as root"
-            android:summary="Unless Process Explorer runs as root, you won't be able to view per-process detailed information. On a rooted device/emulator, enable the 'Run as root' option above before starting the service.\nOn the AOSP emulator run the following and don't make use of the 'Star the service' button.\n$ adb shell 'cd /data/user/0/com.opersys.processexplorer/files &amp;&amp; ./node ./app.js'"
+            android:summary="Unless Process Explorer runs as root, you won't be able to view per-process detailed information. If you have one of the 'su' apps installed, enable the 'Run as root' option above before starting the service.\nIf you're using the AOSP emulator run the following on your computer and don't make use of the 'Start the service' button.\n$ adb shell 'cd /data/user/0/com.opersys.processexplorer/files &amp;&amp; ./node ./app.js'"
             android:enabled="true"
             android:layout="@layout/preference" />
     </PreferenceCategory>
