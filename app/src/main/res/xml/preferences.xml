@@ -38,7 +38,7 @@
 
     <PreferenceCategory android:title="Instructions">
         <Preference android:key="pe_instructions"
-            android:title="Browse the Process Explorer"
+            android:title="On your computer"
             android:summary="Service not started"
             android:enabled="false" />
 
