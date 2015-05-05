@@ -89,10 +89,6 @@ public class ProcessExplorerService extends Service implements Thread.UncaughtEx
     public int onStartCommand(Intent intent, int flags, int startId) {
         boolean isBooting = false;
 
-        startForeground(
-                notifMgr.getForegroundNotificationId(),
-                notifMgr.getForegroundNotification());
-
         // If this was called by the boot broadcast receiver, start the
         // node service immediately.
         if (intent != null && intent.getExtras() != null) {

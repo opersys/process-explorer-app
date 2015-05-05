@@ -39,6 +39,7 @@ public class ProcessExplorerNotificationManager implements NodeThreadListener {
 
     protected NotificationCompat.Builder notifBuilder;
     protected NotificationManager notifService;
+    protected Notification notif;
 
     public ProcessExplorerNotificationManager(ProcessExplorerService nodeService) {
         Intent notifIntent;
@@ -67,8 +68,10 @@ public class ProcessExplorerNotificationManager implements NodeThreadListener {
 
     // Returns the notification object the service can use to call startForeground.
     public Notification getForegroundNotification() {
-        notifBuilder.setContentText("Stopped. Ready to start.");
-        return notifBuilder.build();
+        if (notif == null)
+            notif = notifBuilder.build();
+
+        return notif;
     }
 
     @Override
