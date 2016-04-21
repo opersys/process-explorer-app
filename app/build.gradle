@@ -11,13 +11,15 @@ preBuild.doFirst {
 }
 
 android {
-    compileSdkVersion 10
-    buildToolsVersion "21.1.1"
+    compileSdkVersion 23
+    buildToolsVersion "23.0.2"
 
     defaultConfig {
         applicationId "com.opersys.processexplorer"
-        minSdkVersion 10
-        targetSdkVersion 10
+        minSdkVersion 15
+        targetSdkVersion 23
+        versionCode 8
+        versionName "0.9.6"
     }
 
     buildTypes {
@@ -31,5 +33,5 @@ android {
 dependencies {
     compile files('libs/commons-compress-1.7.jar')
     compile files('libs/org.restlet.jar')
-    compile 'com.android.support:support-v4:21.0.2'
+    compile 'com.android.support:support-v4:23.2.1'
 }
